@@ -49,3 +49,6 @@ def convert(currencies, from_currency, to_currency, amount):
         amount /= currencies[from_currency]["rate"]
     return amount * currencies[to_currency].get("rate", 1) # 1 in case to_currency is EUR
 
+def list_all(currencies):
+    for currency in currencies:
+        print(f"1 {currency} ({currencies[currency]['name']}) = {currencies[currency]['rate']} EUR")
