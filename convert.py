@@ -47,8 +47,34 @@ def get_currencies(url):
 def convert(currencies, from_currency, to_currency, amount):
     if from_currency != "EUR":
         amount /= currencies[from_currency]["rate"]
-    return amount * currencies[to_currency].get("rate", 1) # 1 in case to_currency is EUR
+    if to_currency == "EUR":
+        return amount
+    return amount * currencies[to_currency]["rate"] # 1 in case to_currency is EUR
+
 
 def list_all(currencies):
     for currency in currencies:
         print(f"1 {currency} ({currencies[currency]['name']}) = {currencies[currency]['rate']} EUR")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--list", "-l", help="Display all availible exchange rates from EUR", action="store_true")
+    options, _ = parser.parse_known_args()
+    currencies = get_currencies(URL)
+    if options.list:
+        list_all(currencies)
+    else:
+        parser.add_argument("amount", type=int, nargs=1, help="Amount of from_currency to convert")
+        parser.add_argument("from_currency", nargs=1, help="Currency from which to convert")
+        parser.add_argument("to_currency", nargs='+', help="Currencies to which convert")
+        args = parser.parse_args()
+
+        from_currency = args.from_currency[0]
+        amount = args.amount[0]
+        
+        for currency in args.to_currency:
+            print(f"{amount} {from_currency} = {round(convert(currencies, from_currency, currency, amount), 5)} {currency}")
+
+if __name__ == "__main__":
+    main()
