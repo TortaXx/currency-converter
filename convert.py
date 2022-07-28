@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from config import *
+import argparse
 
 
 
@@ -9,12 +10,12 @@ def get_live_rates(page):
     soup = BeautifulSoup(page.content, "html.parser")
     forex_table = soup.find("table", class_="forextable").find("tbody")
     table_rows = forex_table.find_all("tr")
-    exchange_rates = dict()
+    currencies = dict()
 
     for row in table_rows:
-        symbol, rate = get_currency_info(row)
-        exchange_rates[symbol] = float(rate)
-    return exchange_rates
+        symbol, rate, name = get_currency_info(row)
+        currencies[symbol] = {"rate": float(rate), "name": name}
+    return currencies
 
 
 def get_past_rates(filename):
@@ -26,13 +27,14 @@ def get_past_rates(filename):
         return None
 
 
-def get_currency_info(table_row):  # returns full currency name, symbol and conversion rate
+def get_currency_info(table_row):  # returns symbol, full currency name and conversion rate
     symbol = table_row.find("td", class_="currency").text
     rate = table_row.find("td", class_="spot number").find("span", class_="rate").text
-    return (symbol, rate)
+    name = table_row.find("td", class_="alignLeft").find("a").text
+    return (symbol, rate, name)
 
 
-def get_rates(url):
+def get_currencies(url):
     page = requests.get(url)
     if page.status_code != 200:
         return get_past_rates()
@@ -42,8 +44,8 @@ def get_rates(url):
     return live_data
 
 
-def convert(rates, from_currency, to_currency, amount):
+def convert(currencies, from_currency, to_currency, amount):
     if from_currency != "EUR":
-        amount /= rates[from_currency]
-        from_currency = "EUR"
-    return amount * rates.get(to_currency, 1) # 1 in case to_currency is EUR
+        amount /= currencies[from_currency]["rate"]
+    return amount * currencies[to_currency].get("rate", 1) # 1 in case to_currency is EUR
+
