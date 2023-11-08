@@ -11,17 +11,26 @@ def get_live_rates(page):
     soup = BeautifulSoup(page.content, "html.parser")
     
     try:
-        forex_table = soup.find("table", class_="forextable").find("tbody").find("tr")
+        forex_table = soup.find("table", class_="forextable").find("tbody")
+        forex_table_rows = forex_table.find_all("tr")
     except TypeError: # if find() is called on None
         print(f"No table of currencies found on {URL}\nPage strucure has possibly changed", file=sys.stderr)
         return None
 
     currencies = dict()
     
-    for row in forex_table:
+    for row in forex_table_rows:
         symbol, rate, name = get_currency_info(row)
         currencies[symbol] = {"rate": float(rate), "name": name}
     return currencies
+
+
+def save_current_rates(rates, filename):
+    try:
+        with open(DATA_FILE, "w") as file: 
+            json.dump(rates, file, indent=4)  # Save data to use later without internet connection
+    except IOError:
+        print(f"Error opening {DATA_FILE} to save current conversion rates for later use", file=sys.stderr)
 
 
 def get_past_rates(filename):
@@ -44,16 +53,13 @@ def get_currency_info(table_row):  # returns symbol, full currency name and conv
 def get_currencies(url):
     page = requests.get(url)
     if page.status_code != 200:
+        print(f"{page.content}\nUsing saved rates from the past")
         return get_past_rates()
     live_data = get_live_rates(page)
     if live_data is None:
         return None
     
-    try:
-        with open(DATA_FILE, "w") as file: 
-            json.dump(live_data, file, indent=4)  # Save data to use later without internet connection
-    except IOError:
-        print(f"Error opening {DATA_FILE} to save current conversion rates for later use", file=sys.stderr)
+    save_current_rates(live_data, DATA_FILE)
     
     return live_data
 
