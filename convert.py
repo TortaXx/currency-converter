@@ -78,26 +78,32 @@ def list_all(currencies):
 
 
 def main():
+    # Has to be improved
     parser = argparse.ArgumentParser()
     parser.add_argument("--list", "-l", help="Display all availible exchange rates from EUR", action="store_true")
+    
+    parser.add_argument("--amount", "-n", type=int, nargs=1, help="Amount of from_currency to convert")
+    parser.add_argument("--from-currency", "-f", nargs=1, help="Currency from which to convert")
+    parser.add_argument("--to-currency", "-t", nargs='+', help="Currencies to which convert")
+    
     options, _ = parser.parse_known_args()
     currencies = get_currencies(URL)
     if currencies is None:
-        sys.exit(0)
+        sys.exit(1)
     
     if options.list:
         list_all(currencies)
-    else:
-        parser.add_argument("amount", type=int, nargs=1, help="Amount of from_currency to convert")
-        parser.add_argument("from_currency", nargs=1, help="Currency from which to convert")
-        parser.add_argument("to_currency", nargs='+', help="Currencies to which convert")
-        args = parser.parse_args()
+        sys.exit(0)
 
-        from_currency = args.from_currency[0]
-        amount = args.amount[0]
-        
-        for currency in args.to_currency:
-            print(f"{amount} {from_currency} = {round(convert(currencies, from_currency, currency, amount), 5)} {currency}")
+    if not options.amount or not options.from_currency or not options.to_currency:
+        print("All of `--amount`, `--from-currency` and `to-currency` need to be specified")
+        sys.exit(1)
+
+    from_currency = options.from_currency[0]
+    amount = options.amount[0]
+    
+    for currency in options.to_currency:
+        print(f"{amount} {from_currency} = {round(convert(currencies, from_currency, currency, amount), 5)} {currency}")
 
 if __name__ == "__main__":
     main()
