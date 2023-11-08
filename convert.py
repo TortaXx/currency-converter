@@ -3,16 +3,22 @@ from bs4 import BeautifulSoup
 import json
 from config import *
 import argparse
+import sys
 
 
 
 def get_live_rates(page):
     soup = BeautifulSoup(page.content, "html.parser")
-    forex_table = soup.find("table", class_="forextable").find("tbody")
-    table_rows = forex_table.find_all("tr")
-    currencies = dict()
+    
+    try:
+        forex_table = soup.find("table", class_="forextable").find("tbody").find("tr")
+    except TypeError: # if find() is called on None
+        print(f"No table of currencies found on {URL}\nPage strucure has possibly changed", file=sys.stderr)
+        return None
 
-    for row in table_rows:
+    currencies = dict()
+    
+    for row in forex_table:
         symbol, rate, name = get_currency_info(row)
         currencies[symbol] = {"rate": float(rate), "name": name}
     return currencies
@@ -24,6 +30,7 @@ def get_past_rates(filename):
             exchange_rates = json.load(file)
             return exchange_rates
     except IOError:
+        print(f"Error opening {DATA_FILE} while getting saved rates from the past", file=sys.stderr)
         return None
 
 
@@ -39,8 +46,15 @@ def get_currencies(url):
     if page.status_code != 200:
         return get_past_rates()
     live_data = get_live_rates(page)
-    with open(DATA_FILE, "w") as file: 
-        json.dump(live_data, file, indent=4)  # Save data to use later without internet connection
+    if live_data is None:
+        return None
+    
+    try:
+        with open(DATA_FILE, "w") as file: 
+            json.dump(live_data, file, indent=4)  # Save data to use later without internet connection
+    except IOError:
+        print(f"Error opening {DATA_FILE} to save current conversion rates for later use", file=sys.stderr)
+    
     return live_data
 
 
@@ -62,6 +76,9 @@ def main():
     parser.add_argument("--list", "-l", help="Display all availible exchange rates from EUR", action="store_true")
     options, _ = parser.parse_known_args()
     currencies = get_currencies(URL)
+    if currencies is None:
+        sys.exit(0)
+    
     if options.list:
         list_all(currencies)
     else:
