@@ -1,6 +1,6 @@
 # Currency converter
 
-CLI tool for conversion between 30 currencies.
+CLI tool for conversion between currencies.
 Conversion rates are obtained from European Central Bank
 
 ## Usage
